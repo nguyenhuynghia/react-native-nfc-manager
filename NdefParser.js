@@ -1,58 +1,31 @@
-let arrayEqual = (a, b) => a && b && a.length === b.length && a.every((v, i) => v === b[i]);
-let bytesToStr = bytes => bytes.reduce((acc, byte) => acc + String.fromCharCode(byte), '');
+const textHelper = require("./ndef-lib/ndef-text");
+const uriHelper = require("./ndef-lib/ndef-uri");
+const arrayEqual = (a, b) => a && b && a.length === b.length && a.every((v, i) => v === b[i]);
+
+function parseText(record) {
+    const RTD_TEXT_TYPE = [0x54];
+    if (record && record.tnf === 1) {
+        if (record.type && arrayEqual(RTD_TEXT_TYPE, record.type)) {
+            try { // only handle utf8 for now
+                return textHelper.decodePayload(record.payload);
+            } catch (ex) {
+                return null;
+            }
+        }
+    }
+    return null;
+}
 
 function parseUri(record) {
-    const RTD_URI_TYPE = [85];
-    const RTD_URI_SCHEMES = [
-        '',
-        'http://www.',
-        'https://www.',
-        'http://',
-        'https://',
-        'tel:',
-        'mailto:',
-        'ftp://anonymous:anonymous@',
-        'ftp://ftp.',
-        'ftps://',
-        'sftp://',
-        'smb://',
-        'nfs://',
-        'ftp://',
-        'dav://',
-        'news:',
-        'telnet://',
-        'imap:',
-        'rtsp://',
-        'urn:',
-        'pop:',
-        'sip:',
-        'sips:',
-        'tftp:',
-        'btspp://',
-        'btl2cap://',
-        'btgoep://',
-        'tcpobex://',
-        'irdaobex://',
-        'file://',
-        'urn:epc:id:',
-        'urn:epc:tag:',
-        'urn:epc:pat:',
-        'urn:epc:raw:',
-        'urn:epc:',
-        'urn:nfc:',
-    ];
+    const RTD_URI_TYPE = [0x55];
     if (record && record.tnf === 1) {
         if (record.type && arrayEqual(RTD_URI_TYPE, record.type)) {
-            let payload = record.payload,
-                scheme = RTD_URI_SCHEMES[payload[0]];
-            if (scheme !== undefined) {
-                try {
-                    return {
-                        uri: `${scheme}${bytesToStr(payload.slice(1))}`
-                    }
-                } catch (err) {
-                    return null;
+            try {
+                return {
+                    uri: uriHelper.decodePayload(record.payload) 
                 }
+            } catch (err) {
+                return null;
             }
         }
     }
@@ -60,5 +33,6 @@ function parseUri(record) {
 }
 
 export default {
-    parseUri
+    parseUri,
+    parseText,
 }

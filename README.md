@@ -1,122 +1,83 @@
 # react-native-nfc-manager
 
+[![npm version](https://img.shields.io/npm/v/react-native-nfc-manager.svg?style=flat)](https://www.npmjs.com/package/react-native-nfc-manager)
+[![build](https://api.travis-ci.org/whitedogg13/react-native-nfc-manager.svg?branch=master)](https://travis-ci.org/whitedogg13/react-native-nfc-manager)
+[![issues](https://img.shields.io/github/issues/whitedogg13/react-native-nfc-manager.svg?style=flat)](https://github.com/whitedogg13/react-native-nfc-manager/issues)
+
 Bring NFC feature to React Native. Inspired by [phonegap-nfc](https://github.com/chariotsolutions/phonegap-nfc) and [react-native-ble-manager](https://github.com/innoveit/react-native-ble-manager)
 
-Contributions are welcomed!
-
-## Supported Platforms
-- Android (API 10+)
-- iOS (iOS11 with iPhone 7/7+, 8/8+)
-
-## Some Words about iOS Support
-
-You will need to setup some capabilities / entitlement / plist stuff to enable NFC development on your device, please follow this great tutorial:
-* https://www.youtube.com/watch?v=SD6Rm4cGyko
+Contributions are welcome!
 
 ## Install
+
 ```shell
+# RN >= 0.60
 npm i --save react-native-nfc-manager
 ```
 
-### Link Native Library with `react-native link`
+```shell
+# RN < 0.60 (without the latest iOS 13 feature)
+npm i --save react-native-nfc-manager@1.2.2
+```
+
+## Setup
+
 
 ```shell
+# RN >= 0.60, iOS
+cd ios && pod install && cd ..
+# ...then open ios/xxx.xcworkspace...
+```
+
+```shell
+# RN >= 0.60, Android
+# This module leverages autolink, so no extra steps are required
+```
+(see [here](https://github.com/react-native-community/cli/blob/master/docs/autolinking.md#autolinking) for more info about autolink)
+
+
+```shell
+# RN < 0.60, both platforms
 react-native link react-native-nfc-manager
 ```
 
+## Extra iOS setup is required
+
+You will need to setup some capabilities / entitlement / plist stuff to enable NFC development on your device, this repo explains these requirements very well:
+
+* https://github.com/hansemannn/iOS11-NFC-Example 
+
+**IMPORTANT: For the new NFC capabilities available on iOS 13 to work, the entitlements file mentioned in the previous guide should look like this:**
+
+```xml
+<key>com.apple.developer.nfc.readersession.formats</key>
+<array>
+  <string>NDEF</string>
+  <string>TAG</string>
+</array>
+```
+
 ## Example
-Look into `example/App.js` as a starting point.
 
-The easiest way to test is simple make your `AppRegistry` point to our example component, like this:
-```javascript
-// in your index.ios.js or index.android.js
-import React, { Component } from 'react';
-import {
-  AppRegistry,
-} from 'react-native';
-import App from 'react-native-nfc-manager/example/App'
+Look into `example` for the features you need.
 
-AppRegistry.registerComponent('NfcManagerDev', () => App);
-```
+**v2 examples**
 
-## API
-This library provide a default export `NfcManager` and a named export `NdefParser`, like this:
-```javascript
-import NfcManager, {NdefParser} from 'react-native-nfc-manager'
-```
+* [v2-ios+android-read-ndef](example/AppV2.js)
+* [v2-ios+android-write-ndef](example/AppV2Ndef.js)
+* [v2-ios+android-get-uid](example/AppV2Mifare.js)
+* [v2-ios+android-mifare-custom-command](example/AppV2Mifare.js)
 
-All methods in `NfcManager` return a `Promise` object and are resolved to different types of data according to individual API.
+**v1 examples**
 
-`NdefParser` is an utility class to parse some well-known NDEF format, currently only support `RTD URI`.
+* [v1-ios-read-ndef](example/App.js)
+* [v1-android-read-write-ndef](example/App.js)
+* [v1-android-mifare-classic](example/AndroidMifareClassic.js)
+* [v1-android-read-write-ndef-with-ndef-tech](example/AndroidTechTestNdef.js)
 
-## NfcManager API
+## API Document
 
-### start({onSessionClosedIOS})
-Init the module.
+* [v2 doc](APIv2.md)
+* [v1 doc](APIv1.md)
 
-__Arguments__
-- `onSessionClosedIOS` - `function` - [iOS only] the callback to invoke when an `NFCNDEFReaderSession` becomes invalidated
-
-__Examples__
-```js
-NfcManager.start({
-    onSessionClosedIOS: () => {
-        console.log('ios session closed');
-    }
-})
-    .then(result => {
-        console.log('start OK', result);
-    })
-    .catch(error => {
-        console.warn('start fail', error);
-        this.setState({supported: false});
-    })
-```
-
-### stop()
-Terminates the module. This will remove the onSessionClosedIOS listener that is attached in the `start` function.
-
-### isEnabled() [Android only]
-Check if the NFC is enabled.
-Returned `Promise` resolved to a boolean value to indicate whether NFC is enabled.
-
-### goToNfcSetting() [Android only]
-Direct the user to NFC setting.
-
-### getLaunchTagEvent() [Android only]
-Get the NFC tag object which launches the app.
-Returned `Promise` resolved to the NFC tag object launching the app and resolved to null if the app isn't launched by NFC tag.
-
-### registerTagEvent(listener, alertMessage, invalidateAfterFirstRead)
-Start to listen to *ANY* NFC tags.
-
-__Arguments__
-- `listener` - `function` - the callback when discovering NFC tags
-- `alertMessage` - `string` - (iOS) the message to display on iOS when the NFCScanning pops up
-- `invalidateAfterFirstRead` - `boolean` - (iOS) when set to true this will not have you prompt to click done after NFC Scan.
-
-__Examples__
-```js
-NfcManager.registerTagEvent(tag => {
-    console.log('Tag Discovered', tag);
-}, 'Hold your device over the tag', true)
-```
-
-### unregisterTagEvent()
-Stop listening to NFC tags.
-
-
-## NdefParser API
-
-### parseUri(ndef)
-Try to parse uri from a NdefMessage, return an object with an `uri` property.
-
-__Arguments__
-- `ndef` - `object` - this object should be obtained from nfc tag object with this form: `tag.ndefMessage[0]`. (NFC tag object can be obtained by `getLaunchTagEvent` or `registerTagEvent`)
-
-__Examples__
-```js
-let {uri} = NdefParser.parseUri(sampleTag.ndefMessage[0]);
-console.log('parseUri: ' + uri);
-```
 
